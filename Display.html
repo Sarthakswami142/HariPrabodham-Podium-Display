@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="gu">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Podium Display - Firebase Pro</title>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <style>
+        :root { --main-txt: #ffffff; --timer-clr: #00ff00; }
+        body { 
+            margin: 0; background: #000; color: var(--main-txt); 
+            font-family: 'Segoe UI', Roboto, sans-serif; height: 100vh; 
+            display: flex; flex-direction: column; overflow: hidden;
+            filter: brightness(100%) saturate(100%);
+        }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 18vh 18vh 64vh; flex-grow: 1; }
+        .cell { border: 1px solid #333; padding: 10px 20px; display: flex; flex-direction: column; overflow: hidden; transition: 0.2s; }
+        .label { font-size: 1.2rem; color: #888; font-weight: bold; }
+        .val { font-size: 6.5vw; font-weight: bold; font-family: 'Segoe UI', monospace; line-height: 1; }
+        .full-width { grid-column: span 2; position: relative; }
+        #msg-container { width: 100%; height: 100%; overflow: hidden; display: flex; flex-direction: column; }
+        #message {
+            font-size: 7.5vw; line-height: 1.2; margin-top: 10px;
+            white-space: pre-wrap; transition: transform 0.1s linear;
+            padding-bottom: 30px;
+        }
+        .bg-red { background-color: #ff0000 !important; }
+        .blink-hide { visibility: hidden; }
+        .bg-blink-black { background-color: #000000 !important; }
+    </style>
+</head>
+<body>
+    <div class="grid">
+        <div class="cell"><div id="lbl-date" class="label">તારીખ:</div><div id="date" class="val">--</div></div>
+        <div class="cell"><div id="lbl-time" class="label">સમય:</div><div id="time" class="val">--</div></div>
+        <div class="cell"><div id="lbl-speech" class="label">વક્તવ્ય સમય:</div><div id="stopwatch" class="val">00:00:00</div></div>
+        <div id="cd-cell" class="cell">
+            <div id="lbl-remain" class="label">બાકી સમય:</div>
+            <div id="countdown" class="val" style="color: var(--timer-clr);">00:00:00</div>
+        </div>
+        <div class="cell full-width">
+            <div id="lbl-msg" class="label">સંદેશ:</div>
+            <div id="msg-container"><div id="message">...</div></div>
+        </div>
+    </div>
+
+    <script>
+        // --- ૧. Firebase Configuration ---
+        // કંટ્રોલર ફાઈલમાં જે વિગતો નાખી હોય તે જ અહીં નાખવી
+        const firebaseConfig = {
+            apiKey: "AIzaSyD63SkDYB69WSUXnADxk-hGTBNz3bK543w",
+            authDomain: "hariprabodham-podium-display.firebaseapp.com",
+            projectId: "hariprabodham-podium-display",
+            storageBucket: "hariprabodham-podium-display.firebasestorage.app",
+            messagingSenderId: "502793105813",
+            appId: "1:502793105813:web:70c7d7ef6c51b31400069c"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+        const podiumRef = database.ref('podium_final');
+
+        // --- ગ્લોબલ વેરિએબલ્સ ---
+        let timerActive = false, startTime = null, duration = 0, scrollInterval;
+        let lastBlinkPercent = null, isBlinking = false, soundPlayed = false;
+        let volume = 0.5, isMuted = false;
+
+        const allLabels = {
+            gu: { date: "વર્તમાન તારીખ:", time: "વર્તમાન સમય:", speech: "વક્તવ્યનો સમય:", remaining: "બાકી સમય:", msg: "સંદેશ:" },
+            hi: { date: "वर्तमान तिथि:", time: "वर्तमान समय:", speech: "भाषण का समय:", remaining: "शेष समय:", msg: "संदेश:" },
+            en: { date: "CURRENT DATE:", time: "CURRENT TIME:", speech: "SPEECH TIME:", remaining: "REMAINING TIME:", msg: "MESSAGE:" }
+        };
+
+        // ૧. ફંક્શન: ઓડિયો બીપ
+        function playBeep() {
+            if (isMuted || volume <= 0) return;
+            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sine'; osc.frequency.setValueAtTime(880, audioCtx.currentTime);
+            gain.gain.setValueAtTime(volume, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 1);
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.start(); osc.stop(audioCtx.currentTime + 1);
+        }
+
+        // ૨. ફંક્શન: ભાષા અપડેટ
+        function updateLanguage(langCode) {
+            const lang = allLabels[langCode] || allLabels['gu'];
+            document.getElementById('lbl-date').innerText = lang.date;
+            document.getElementById('lbl-time').innerText = lang.time;
+            document.getElementById('lbl-speech').innerText = lang.speech;
+            document.getElementById('lbl-remain').innerText = lang.remaining;
+            document.getElementById('lbl-msg').innerText = lang.msg;
+        }
+
+        // ૩. લાઈવ ઘડિયાળ
+        setInterval(() => {
+            const now = new Date();
+            document.getElementById('date').innerText = now.toISOString().split('T')[0];
+            document.getElementById('time').innerText = now.toLocaleTimeString('en-GB');
+            if (timerActive) updateTimers();
+        }, 1000);
+
+        // ૪. ફંક્શન: ટાઈમર ગણતરી
+        function updateTimers() {
+            const now = new Date().getTime();
+            const elapsed = Math.floor((now - startTime) / 1000);
+            document.getElementById('stopwatch').innerText = format(elapsed);
+            
+            const cdVal = document.getElementById('countdown'), cdCell = document.getElementById('cd-cell');
+            if (duration <= 0) { 
+                cdVal.innerText = "00:00:00"; cdVal.style.color = "#00ff00"; cdCell.classList.remove('bg-red'); return; 
+            }
+
+            const remain = duration - elapsed;
+            if (remain <= 0) {
+                if (!soundPlayed && remain === 0) { playBeep(); soundPlayed = true; }
+                cdVal.innerText = "-" + format(Math.abs(remain));
+                cdCell.classList.add('bg-red');
+                cdVal.style.color = "white";
+                if (Math.abs(remain) % 60 === 0 && !isBlinking) startBlink(cdCell, "background");
+            } else {
+                cdVal.innerText = format(remain);
+                cdCell.classList.remove('bg-red');
+                const p = Math.ceil((remain / duration) * 100);
+
+                if (p <= 5) {
+                    cdVal.style.color = "#ff3333";
+                    if (lastBlinkPercent !== 5) { lastBlinkPercent = 5; startBlink(cdVal, "text"); }
+                } else if (p <= 25) {
+                    cdVal.style.color = "#ffaa00";
+                    if (lastBlinkPercent !== 25) { lastBlinkPercent = 25; startBlink(cdVal, "text"); }
+                } else if (p <= 50) {
+                    cdVal.style.color = "#ffff00";
+                    if (lastBlinkPercent !== 50) { lastBlinkPercent = 50; startBlink(cdVal, "text"); }
+                } else {
+                    cdVal.style.color = "#00ff00";
+                }
+            }
+        }
+
+        // ૫. ફંક્શન: બ્લિંકિંગ એલર્ટ
+        function startBlink(element, type) {
+            isBlinking = true; let count = 0;
+            let bt = setInterval(() => {
+                type === "text" ? element.classList.toggle('blink-hide') : element.classList.toggle('bg-blink-black');
+                if (++count >= 6) { clearInterval(bt); element.classList.remove('blink-hide', 'bg-blink-black'); isBlinking = false; }
+            }, 300);
+        }
+
+        // ૬. ફંક્શન: મેસેજ ઓટો-સ્ક્રોલિંગ
+        function startScrolling() {
+            const container = document.getElementById('msg-container');
+            const content = document.getElementById('message');
+            clearInterval(scrollInterval);
+            content.style.transform = `translateY(0)`;
+            if (content.innerText === "..." || content.innerText === "") return;
+
+            if (content.offsetHeight > container.offsetHeight) {
+                let pos = 0; let isPaused = true;
+                setTimeout(() => {
+                    isPaused = false;
+                    scrollInterval = setInterval(() => {
+                        if (!isPaused) {
+                            pos--;
+                            content.style.transform = `translateY(${pos}px)`;
+                            if (Math.abs(pos) >= (content.offsetHeight - container.offsetHeight)) {
+                                isPaused = true; 
+                                setTimeout(() => {
+                                    pos = 0; content.style.transform = `translateY(0)`;
+                                    setTimeout(() => { isPaused = false; }, 3000);
+                                }, 3000);
+                            }
+                        }
+                    }, 25);
+                }, 3000);
+            }
+        }
+
+        // ૭. ફંક્શન: સમય ફોર્મેટિંગ
+        function format(s) {
+            const h = String(Math.floor(s / 3600)).padStart(2, '0');
+            const m = String(Math.floor((s % 3600) / 60)).padStart(2, '0');
+            const sc = String(s % 60).padStart(2, '0');
+            return `${h}:${m}:${sc}`;
+        }
+
+        // ૮. ફંક્શન: Firebase માંથી ડેટા એપ્લાય કરવો
+        function applyData(data) {
+            if (!data) return;
+            document.body.style.filter = `brightness(${data.brightness || 100}%) saturate(${data.saturation || 100}%)`;
+            if (data.lang) updateLanguage(data.lang);
+            volume = (data.vol || 50) / 100; isMuted = data.mute || false;
+
+            if (data.action === 'start') { startTime = data.startTime; duration = data.duration; timerActive = true; }
+            else if (data.action === 'stop' || data.action === 'reset') { 
+                timerActive = false; 
+                if (data.action === 'reset') { 
+                    soundPlayed = false; duration = 0; lastBlinkPercent = null;
+                    document.getElementById('stopwatch').innerText = "00:00:00";
+                    document.getElementById('countdown').innerText = "00:00:00";
+                    document.getElementById('countdown').style.color = "#00ff00";
+                    document.getElementById('cd-cell').classList.remove('bg-red');
+                }
+            }
+            if (data.msg) {
+                const m = document.getElementById('message');
+                if (data.msg === "CLEAR_MSG") { 
+                    m.innerText = "..."; clearInterval(scrollInterval); m.style.transform = `translateY(0)`; 
+                } else if (m.innerText !== data.msg) { 
+                    m.innerText = data.msg; setTimeout(startScrolling, 500); 
+                }
+            }
+            if (data.clr) document.documentElement.style.setProperty('--main-txt', data.clr);
+        }
+
+        // ૯. Firebase Real-time Listener (Storage Event ની બદલે)
+        podiumRef.on('value', (snapshot) => {
+            const data = snapshot.val();
+            applyData(data);
+        });
+
+    </script>
+</body>
+</html>

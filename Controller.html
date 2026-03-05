@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="gu">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Podium Console - Firebase Pro</title>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <style>
+        :root {
+            --bg-dark: #0f172a; --card-bg: #1e293b; --accent-blue: #38bdf8;
+            --accent-green: #22c55e; --accent-red: #ef4444; --accent-orange: #f59e0b;
+            --text-main: #f8fafc; --text-dim: #94a3b8;
+        }
+        body { 
+            font-family: 'Inter', sans-serif; background-color: var(--bg-dark); color: var(--text-main); 
+            padding: 20px; margin: 0; display: flex; flex-direction: column; align-items: center;
+        }
+        .container { width: 100%; max-width: 500px; }
+        .box { 
+            background: var(--card-bg); padding: 20px; border-radius: 16px; margin-bottom: 20px; 
+            border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+        }
+        h3 { margin: 0 0 15px 0; font-size: 1.1rem; color: var(--accent-blue); text-transform: uppercase; }
+        label { display: block; font-size: 0.85rem; color: var(--text-dim); margin-bottom: 8px; }
+        .time-input-group { display: flex; gap: 10px; align-items: center; justify-content: center; margin-bottom: 15px; }
+        input[type="number"], textarea { 
+            background: #0f172a; color: white; border: 1px solid #334155; padding: 12px; border-radius: 8px; width: 100%; outline: none;
+        }
+        .time-input-group input { text-align: center; width: 70px; font-weight: bold; font-size: 1.2rem; }
+        button { 
+            width: 100%; padding: 14px; margin: 8px 0; border-radius: 10px; border: none; font-weight: bold; cursor: pointer; 
+            display: flex; align-items: center; justify-content: center; gap: 8px; transition: 0.2s;
+        }
+        .btn-start { background: var(--accent-green); color: white; }
+        .btn-stop { background: var(--accent-red); color: white; }
+        .btn-resume { background: var(--accent-orange); color: white; }
+        .btn-reset { background: #475569; color: white; }
+        .btn-msg { background: var(--accent-blue); color: white; }
+        .btn-clear { background: transparent; border: 1px solid var(--accent-red); color: var(--accent-red); }
+        .flex-row { display: flex; gap: 12px; align-items: center; }
+        .adjustment-box { background: #0f172a; padding: 15px; border-radius: 12px; border: 1px solid #334155; margin-top: 10px; }
+        .slider-container { margin-top: 15px; }
+        .slider-label { display: flex; justify-content: space-between; font-size: 0.9rem; margin-bottom: 5px; }
+        .val-text { color: var(--accent-blue); font-weight: bold; }
+        input[type="range"] { -webkit-appearance: none; width: 100%; height: 6px; background: #334155; border-radius: 5px; outline: none; }
+        input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; background: var(--accent-blue); border-radius: 50%; cursor: pointer; border: 2px solid white; }
+        .radio-group { display: flex; gap: 15px; background: #0f172a; padding: 12px; border-radius: 8px; border: 1px solid #334155; margin-bottom: 20px; }
+        input[type="color"] { height: 40px; cursor: pointer; border: none; background: none; width: 100%; margin-bottom: 15px;}
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="box">
+        <h3>⏲️ Timer Control</h3>
+        <label>Speech Duration (HH : MM : SS)</label>
+        <div class="time-input-group">
+            <input type="number" id="hh" min="0" max="23" value="00">
+            <input type="number" id="mm" min="0" max="59" value="00">
+            <input type="number" id="ss" min="0" max="59" value="00">
+        </div>
+        <button class="btn-start" onclick="control('start')">🚀 START SPEECH</button>
+        <div class="flex-row">
+            <button class="btn-stop" onclick="control('stop')">🛑 STOP</button>
+            <button class="btn-resume" onclick="control('resume')">▶️ RESUME</button>
+        </div>
+        <button class="btn-reset" onclick="control('reset')">🔄 RESET TIMER</button>
+
+        <div class="adjustment-box">
+            <div class="slider-label"><span>🔊 Audio Volume</span> <span id="volPerc" class="val-text">50%</span></div>
+            <input type="range" id="volBar" min="0" max="100" value="50" step="10" oninput="adjustDisplay()">
+            <label style="margin-top:10px; cursor:pointer; display:flex; align-items:center; gap:8px;">
+                <input type="checkbox" id="muteCheck" onclick="adjustDisplay()"> Mute Audio
+            </label>
+        </div>
+    </div>
+
+    <div class="box">
+        <h3>💬 Message Center</h3>
+        <textarea id="msgInput" rows="3" placeholder="સંદેશ લખો..."></textarea>
+        <div class="flex-row">
+            <button class="btn-msg" onclick="control('msg')">📤 SEND</button>
+            <button class="btn-clear" onclick="clearMsg()">🗑️ CLEAR</button>
+        </div>
+    </div>
+
+    <div class="box">
+        <h3>🛠️ Display Adjustments</h3>
+        <label>Select Language</label>
+        <div class="radio-group">
+            <label style="cursor:pointer;"><input type="radio" name="lang_pick" value="gu" checked onclick="changeLang('gu')"> ગુજરાતી</label>
+            <label style="cursor:pointer;"><input type="radio" name="lang_pick" value="en" onclick="changeLang('en')"> English</label>
+            <label style="cursor:pointer;"><input type="radio" name="lang_pick" value="hi" onclick="changeLang('hi')"> हिन्दी</label>
+        </div>
+
+        <label>Text Color</label>
+        <input type="color" id="clrPick" value="#ffffff" oninput="adjustDisplay()">
+
+        <div class="adjustment-box">
+            <div class="slider-container">
+                <div class="slider-label"><span>✨ Brightness</span> <span id="brightVal" class="val-text">100%</span></div>
+                <input type="range" id="brightness" min="10" max="150" value="100" step="10" oninput="adjustDisplay()">
+            </div>
+
+            <div class="slider-container" style="margin-bottom:0;">
+                <div class="slider-label"><span>🌈 Color Saturation</span> <span id="satVal" class="val-text">100%</span></div>
+                <input type="range" id="saturation" min="0" max="200" value="100" step="10" oninput="adjustDisplay()">
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- ૧. Firebase Configuration ---
+    // તમારા Firebase Console માંથી મળેલી વિગતો અહીં બદલો
+    const firebaseConfig = {
+        apiKey: "AIzaSyD63SkDYB69WSUXnADxk-hGTBNz3bK543w",
+        authDomain: "hariprabodham-podium-display.firebaseapp.com",
+        projectId: "hariprabodham-podium-display",
+        storageBucket: "hariprabodham-podium-display.firebasestorage.app",
+        messagingSenderId: "502793105813",
+        appId: "1:502793105813:web:70c7d7ef6c51b31400069c"
+    };
+
+    // Firebase ઈનિશિયલાઈઝ
+    firebase.initializeApp(firebaseConfig);
+    const database = firebase.database();
+    const podiumRef = database.ref('podium_final');
+
+    let pausedAt = 0;
+    let currentState = {}; // રિયલ ટાઈમ સ્ટેટ રાખવા માટે
+
+    // ડેટાબેઝમાંથી લેટેસ્ટ વેલ્યુ સાંભળવી
+    podiumRef.on('value', (snapshot) => {
+        currentState = snapshot.val() || {};
+    });
+
+    // ૨. ફંક્શન: ભાષા બદલવી
+    function changeLang(langCode) {
+        const lp = { gu: "સંદેશ લખો...", en: "Type Message...", hi: "संदેશ लिखें..." };
+        document.getElementById('msgInput').placeholder = lp[langCode];
+        adjustDisplay();
+    }
+
+    // ૩. ફંક્શન: ટાઈમર અને સિસ્ટમ કંટ્રોલ
+    function control(act) {
+        const hh = parseInt(document.getElementById('hh').value) || 0;
+        const mm = parseInt(document.getElementById('mm').value) || 0;
+        const ss = parseInt(document.getElementById('ss').value) || 0;
+        const totalSecs = (hh * 3600) + (mm * 60) + ss;
+
+        let store = {...currentState};
+
+        if (act === 'start') {
+            store.action = 'start'; store.startTime = new Date().getTime(); store.duration = totalSecs; pausedAt = 0;
+        } else if (act === 'stop') {
+            store.action = 'stop'; pausedAt = new Date().getTime() - (store.startTime || new Date().getTime());
+        } else if (act === 'resume') {
+            if (store.action === 'stop') { store.action = 'start'; store.startTime = new Date().getTime() - pausedAt; }
+        } else if (act === 'reset') {
+            store.action = 'reset'; pausedAt = 0;
+            document.getElementById('hh').value="00"; document.getElementById('mm').value="00"; document.getElementById('ss').value="00";
+        }
+
+        if (act === 'msg') store.msg = document.getElementById('msgInput').value || "CLEAR_MSG";
+        saveToFirebase(store);
+    }
+
+    // ૪. ફંક્શન: સંદેશો સાફ કરવો
+    function clearMsg() {
+        document.getElementById('msgInput').value = "";
+        let store = {...currentState};
+        store.msg = "CLEAR_MSG";
+        saveToFirebase(store);
+    }
+
+    // ૫. ફંક્શન: ડિસ્પ્લે સેટિંગ્સ અપડેટ કરવા
+    function adjustDisplay() {
+        let store = {...currentState};
+        store.brightness = document.getElementById('brightness').value;
+        store.saturation = document.getElementById('saturation').value;
+        store.clr = document.getElementById('clrPick').value;
+        store.lang = document.querySelector('input[name="lang_pick"]:checked').value;
+        store.vol = document.getElementById('volBar').value;
+        store.mute = document.getElementById('muteCheck').checked;
+        
+        document.getElementById('brightVal').innerText = store.brightness + "%";
+        document.getElementById('satVal').innerText = store.saturation + "%";
+        document.getElementById('volPerc').innerText = store.vol + "%";
+        
+        saveToFirebase(store);
+    }
+
+    // ૬. ફંક્શન: Firebase માં ડેટા સેવ કરવો (saveAll ને બદલે)
+    function saveToFirebase(obj) {
+        podiumRef.set(obj);
+    }
+</script>
+</body>
+</html>
