@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Podium Console - Firebase Pro</title>
+    <title>Podium Console - Secure Pro</title>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
     <style>
@@ -21,6 +21,18 @@
             background: var(--card-bg); padding: 20px; border-radius: 16px; margin-bottom: 20px; 
             border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
         }
+
+        /* PIN Screen Styles */
+        #pin-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 80vh; }
+        #pin-screen input { 
+            background: #0f172a; color: white; border: 2px solid var(--accent-blue); 
+            padding: 15px; border-radius: 8px; font-size: 1.5rem; text-align: center; width: 150px; outline: none;
+        }
+        #pin-screen button { background: var(--accent-blue); color: white; margin-top: 20px; padding: 10px 30px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
+        
+        /* Main UI (Initially Hidden) */
+        #main-ui { display: none; width: 100%; }
+
         h3 { margin: 0 0 15px 0; font-size: 1.1rem; color: var(--accent-blue); text-transform: uppercase; }
         label { display: block; font-size: 0.85rem; color: var(--text-dim); margin-bottom: 8px; }
         .time-input-group { display: flex; gap: 10px; align-items: center; justify-content: center; margin-bottom: 15px; }
@@ -52,131 +64,126 @@
 <body>
 
 <div class="container">
-    <div class="box">
-        <h3>⏲️ Timer Control</h3>
-        <label>Speech Duration (HH : MM : SS)</label>
-        <div class="time-input-group">
-            <input type="number" id="hh" min="0" max="23" value="00">
-            <input type="number" id="mm" min="0" max="59" value="00">
-            <input type="number" id="ss" min="0" max="59" value="00">
-        </div>
-        <button class="btn-start" onclick="control('start')">🚀 START SPEECH</button>
-        <div class="flex-row">
-            <button class="btn-stop" onclick="control('stop')">🛑 STOP</button>
-            <button class="btn-resume" onclick="control('resume')">▶️ RESUME</button>
-        </div>
-        <button class="btn-reset" onclick="control('reset')">🔄 RESET TIMER</button>
-
-        <div class="adjustment-box">
-            <div class="slider-label"><span>🔊 Audio Volume</span> <span id="volPerc" class="val-text">50%</span></div>
-            <input type="range" id="volBar" min="0" max="100" value="50" step="10" oninput="adjustDisplay()">
-            <label style="margin-top:10px; cursor:pointer; display:flex; align-items:center; gap:8px;">
-                <input type="checkbox" id="muteCheck" onclick="adjustDisplay()"> Mute Audio
-            </label>
-        </div>
+    <div id="pin-screen">
+        <h3>🔒 Security Access</h3>
+        <input type="password" id="pinInput" placeholder="PIN" maxlength="4">
+        <button onclick="unlock()">Unlock Console</button>
+        <p id="error" style="color: red; margin-top: 10px; display: none;">Wrong PIN!</p>
     </div>
 
-    <div class="box">
-        <h3>💬 Message Center</h3>
-        <textarea id="msgInput" rows="3" placeholder="સંદેશ લખો..."></textarea>
-        <div class="flex-row">
-            <button class="btn-msg" onclick="control('msg')">📤 SEND</button>
-            <button class="btn-clear" onclick="clearMsg()">🗑️ CLEAR</button>
-        </div>
-    </div>
-
-    <div class="box">
-        <h3>🛠️ Display Adjustments</h3>
-        <label>Select Language</label>
-        <div class="radio-group">
-            <label style="cursor:pointer;"><input type="radio" name="lang_pick" value="gu" checked onclick="changeLang('gu')"> ગુજરાતી</label>
-            <label style="cursor:pointer;"><input type="radio" name="lang_pick" value="en" onclick="changeLang('en')"> English</label>
-            <label style="cursor:pointer;"><input type="radio" name="lang_pick" value="hi" onclick="changeLang('hi')"> हिन्दी</label>
-        </div>
-
-        <label>Text Color</label>
-        <input type="color" id="clrPick" value="#ffffff" oninput="adjustDisplay()">
-
-        <div class="adjustment-box">
-            <div class="slider-container">
-                <div class="slider-label"><span>✨ Brightness</span> <span id="brightVal" class="val-text">100%</span></div>
-                <input type="range" id="brightness" min="10" max="150" value="100" step="10" oninput="adjustDisplay()">
+    <div id="main-ui">
+        <div class="box">
+            <h3>⏲️ Timer Control</h3>
+            <label>Speech Duration (HH : MM : SS)</label>
+            <div class="time-input-group">
+                <input type="number" id="hh" min="0" max="23" value="00">
+                <input type="number" id="mm" min="0" max="59" value="00">
+                <input type="number" id="ss" min="0" max="59" value="00">
             </div>
+            <button class="btn-start" onclick="control('start')">🚀 START SPEECH</button>
+            <div class="flex-row">
+                <button class="btn-stop" onclick="control('stop')">🛑 STOP</button>
+                <button class="btn-resume" onclick="control('resume')">▶️ RESUME</button>
+            </div>
+            <button class="btn-reset" onclick="control('reset')">🔄 RESET TIMER</button>
 
-            <div class="slider-container" style="margin-bottom:0;">
-                <div class="slider-label"><span>🌈 Color Saturation</span> <span id="satVal" class="val-text">100%</span></div>
-                <input type="range" id="saturation" min="0" max="200" value="100" step="10" oninput="adjustDisplay()">
+            <div class="adjustment-box">
+                <div class="slider-label"><span>🔊 Audio Volume</span> <span id="volPerc" class="val-text">50%</span></div>
+                <input type="range" id="volBar" min="0" max="100" value="50" step="10" oninput="adjustDisplay()">
+                <label style="margin-top:10px; cursor:pointer; display:flex; align-items:center; gap:8px;">
+                    <input type="checkbox" id="muteCheck" onclick="adjustDisplay()"> Mute Audio
+                </label>
             </div>
         </div>
+
+        <div class="box">
+            <h3>💬 Message Center</h3>
+            <textarea id="msgInput" rows="3" placeholder="સંદેશ લખો..."></textarea>
+            <div class="flex-row">
+                <button class="btn-msg" onclick="control('msg')">📤 SEND</button>
+                <button class="btn-clear" onclick="clearMsg()">🗑️ CLEAR</button>
+            </div>
+        </div>
+
+        <div class="box">
+            <h3>🛠️ Display Adjustments</h3>
+            <label>Select Language</label>
+            <div class="radio-group">
+                <label style="cursor:pointer;"><input type="radio" name="lang_pick" value="gu" checked onclick="changeLang('gu')"> ગુજરાતી</label>
+                <label style="cursor:pointer;"><input type="radio" name="lang_pick" value="en" onclick="changeLang('en')"> English</label>
+                <label style="cursor:pointer;"><input type="radio" name="lang_pick" value="hi" onclick="changeLang('hi')"> हिन्दी</label>
+            </div>
+            <label>Text Color</label>
+            <input type="color" id="clrPick" value="#ffffff" oninput="adjustDisplay()">
+            <div class="adjustment-box">
+                <div class="slider-container">
+                    <div class="slider-label"><span>✨ Brightness</span> <span id="brightVal" class="val-text">100%</span></div>
+                    <input type="range" id="brightness" min="10" max="150" value="100" step="10" oninput="adjustDisplay()">
+                </div>
+                <div class="slider-container" style="margin-bottom:0;">
+                    <div class="slider-label"><span>🌈 Color Saturation</span> <span id="satVal" class="val-text">100%</span></div>
+                    <input type="range" id="saturation" min="0" max="200" value="100" step="10" oninput="adjustDisplay()">
+                </div>
+            </div>
+        </div>
+        <button onclick="location.reload()" style="background:#475569; color:white; margin-bottom: 50px;">🚪 Logout & Lock</button>
     </div>
 </div>
 
 <script>
-    // --- ૧. Firebase Configuration ---
-    // તમારા Firebase Console માંથી મળેલી વિગતો અહીં બદલો
+    // --- ૩. JavaScript ભાગ ---
     const firebaseConfig = {
         apiKey: "AIzaSyD63SkDYB69WSUXnADxk-hGTBNz3bK543w",
         authDomain: "hariprabodham-podium-display.firebaseapp.com",
-        databaseURL: "https://hariprabodham-podium-display-default-rtdb.asia-southeast1.firebasedatabase.app/",
+        databaseURL: "https://hariprabodham-podium-display-default-rtdb.firebaseio.com", 
         projectId: "hariprabodham-podium-display",
         storageBucket: "hariprabodham-podium-display.firebasestorage.app",
         messagingSenderId: "502793105813",
         appId: "1:502793105813:web:70c7d7ef6c51b31400069c"
     };
 
-    // Firebase ઈનિશિયલાઈઝ
     firebase.initializeApp(firebaseConfig);
     const database = firebase.database();
     const podiumRef = database.ref('podium_final');
 
+    const CORRECT_PIN = "3690"; // તમારો PIN અહીં છે
+    let currentState = {};
     let pausedAt = 0;
-    let currentState = {}; // રિયલ ટાઈમ સ્ટેટ રાખવા માટે
 
-    // ડેટાબેઝમાંથી લેટેસ્ટ વેલ્યુ સાંભળવી
-    podiumRef.on('value', (snapshot) => {
-        currentState = snapshot.val() || {};
-    });
+    function unlock() {
+        const pin = document.getElementById('pinInput').value;
+        if(pin === CORRECT_PIN) {
+            document.getElementById('pin-screen').style.display = 'none';
+            document.getElementById('main-ui').style.display = 'block';
+            podiumRef.on('value', (snapshot) => { currentState = snapshot.val() || {}; });
+        } else {
+            document.getElementById('error').style.display = 'block';
+            document.getElementById('pinInput').value = '';
+        }
+    }
 
-    // ૨. ફંક્શન: ભાષા બદલવી
     function changeLang(langCode) {
-        const lp = { gu: "સંદેશ લખો...", en: "Type Message...", hi: "संदેશ लिखें..." };
+        const lp = { gu: "સંદેશ લખો...", en: "Type Message...", hi: "संदेश लिखें..." };
         document.getElementById('msgInput').placeholder = lp[langCode];
         adjustDisplay();
     }
 
-    // ૩. ફંક્શન: ટાઈમર અને સિસ્ટમ કંટ્રોલ
     function control(act) {
         const hh = parseInt(document.getElementById('hh').value) || 0;
         const mm = parseInt(document.getElementById('mm').value) || 0;
         const ss = parseInt(document.getElementById('ss').value) || 0;
         const totalSecs = (hh * 3600) + (mm * 60) + ss;
-
         let store = {...currentState};
-
-        if (act === 'start') {
-            store.action = 'start'; store.startTime = new Date().getTime(); store.duration = totalSecs; pausedAt = 0;
-        } else if (act === 'stop') {
-            store.action = 'stop'; pausedAt = new Date().getTime() - (store.startTime || new Date().getTime());
-        } else if (act === 'resume') {
-            if (store.action === 'stop') { store.action = 'start'; store.startTime = new Date().getTime() - pausedAt; }
-        } else if (act === 'reset') {
-            store.action = 'reset'; pausedAt = 0;
-            document.getElementById('hh').value="00"; document.getElementById('mm').value="00"; document.getElementById('ss').value="00";
-        }
-
+        if (act === 'start') { store.action = 'start'; store.startTime = new Date().getTime(); store.duration = totalSecs; pausedAt = 0; } 
+        else if (act === 'stop') { store.action = 'stop'; pausedAt = new Date().getTime() - (store.startTime || new Date().getTime()); } 
+        else if (act === 'resume') { if (store.action === 'stop') { store.action = 'start'; store.startTime = new Date().getTime() - pausedAt; } } 
+        else if (act === 'reset') { store.action = 'reset'; pausedAt = 0; document.getElementById('hh').value="00"; document.getElementById('mm').value="00"; document.getElementById('ss').value="00"; }
         if (act === 'msg') store.msg = document.getElementById('msgInput').value || "CLEAR_MSG";
-        saveToFirebase(store);
+        podiumRef.set(store);
     }
 
-    // ૪. ફંક્શન: સંદેશો સાફ કરવો
-    function clearMsg() {
-        document.getElementById('msgInput').value = "";
-        let store = {...currentState};
-        store.msg = "CLEAR_MSG";
-        saveToFirebase(store);
-    }
+    function clearMsg() { document.getElementById('msgInput').value = ""; let store = {...currentState}; store.msg = "CLEAR_MSG"; podiumRef.set(store); }
 
-    // ૫. ફંક્શન: ડિસ્પ્લે સેટિંગ્સ અપડેટ કરવા
     function adjustDisplay() {
         let store = {...currentState};
         store.brightness = document.getElementById('brightness').value;
@@ -185,25 +192,11 @@
         store.lang = document.querySelector('input[name="lang_pick"]:checked').value;
         store.vol = document.getElementById('volBar').value;
         store.mute = document.getElementById('muteCheck').checked;
-        
         document.getElementById('brightVal').innerText = store.brightness + "%";
         document.getElementById('satVal').innerText = store.saturation + "%";
         document.getElementById('volPerc').innerText = store.vol + "%";
-        
-        saveToFirebase(store);
-    }
-
-    // ૬. ફંક્શન: Firebase માં ડેટા સેવ કરવો (saveAll ને બદલે)
-    function saveToFirebase(obj) {
-        podiumRef.set(obj);
+        podiumRef.set(store);
     }
 </script>
 </body>
-
 </html>
-
-
-
-
-
-
