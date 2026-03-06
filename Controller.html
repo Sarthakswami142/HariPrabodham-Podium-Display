@@ -21,6 +21,18 @@
             background: var(--card-bg); padding: 20px; border-radius: 16px; margin-bottom: 20px; 
             border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
         }
+
+        /* PIN Screen Styles */
+        #pin-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 80vh; }
+        #pin-screen input { 
+            background: #0f172a; color: white; border: 2px solid var(--accent-blue); 
+            padding: 15px; border-radius: 8px; font-size: 1.5rem; text-align: center; width: 160px; outline: none;
+        }
+        #pin-screen button { background: var(--accent-blue); color: white; margin-top: 20px; padding: 12px 30px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
+        
+        /* Main UI (Initially Hidden) */
+        #main-ui { display: none; width: 100%; }
+
         h3 { margin: 0 0 15px 0; font-size: 1.1rem; color: var(--accent-blue); text-transform: uppercase; }
         label { display: block; font-size: 0.85rem; color: var(--text-dim); margin-bottom: 8px; }
         .time-input-group { display: flex; gap: 10px; align-items: center; justify-content: center; margin-bottom: 15px; }
@@ -52,68 +64,77 @@
 <body>
 
 <div class="container">
-    <div class="box">
-        <h3>⏲️ Timer Control</h3>
-        <label>Speech Duration (HH : MM : SS)</label>
-        <div class="time-input-group">
-            <input type="number" id="hh" min="0" max="23" value="00">
-            <input type="number" id="mm" min="0" max="59" value="00">
-            <input type="number" id="ss" min="0" max="59" value="00">
-        </div>
-        <button class="btn-start" onclick="control('start')">🚀 START SPEECH</button>
-        <div class="flex-row">
-            <button class="btn-stop" onclick="control('stop')">🛑 STOP</button>
-            <button class="btn-resume" onclick="control('resume')">▶️ RESUME</button>
-        </div>
-        <button class="btn-reset" onclick="control('reset')">🔄 RESET TIMER</button>
-
-        <div class="adjustment-box">
-            <div class="slider-label"><span>🔊 Audio Volume</span> <span id="volPerc" class="val-text">50%</span></div>
-            <input type="range" id="volBar" min="0" max="100" value="50" step="10" oninput="adjustDisplay()">
-            <label style="margin-top:10px; cursor:pointer; display:flex; align-items:center; gap:8px;">
-                <input type="checkbox" id="muteCheck" onclick="adjustDisplay()"> Mute Audio
-            </label>
-        </div>
+    <div id="pin-screen">
+        <h3>🔒 Security Access</h3>
+        <p style="color: var(--text-dim); font-size: 0.9rem;">કંટ્રોલર વાપરવા માટે PIN નાખો</p>
+        <input type="password" id="pinInput" placeholder="PIN" maxlength="4">
+        <button onclick="checkPin()">Unlock Console</button>
+        <p id="errorMsg" style="color: var(--accent-red); margin-top: 15px; display: none;">ખોટો PIN! ફરી પ્રયાસ કરો.</p>
     </div>
 
-    <div class="box">
-        <h3>💬 Message Center</h3>
-        <textarea id="msgInput" rows="3" placeholder="સંદેશ લખો..."></textarea>
-        <div class="flex-row">
-            <button class="btn-msg" onclick="control('msg')">📤 SEND</button>
-            <button class="btn-clear" onclick="clearMsg()">🗑️ CLEAR</button>
-        </div>
-    </div>
-
-    <div class="box">
-        <h3>🛠️ Display Adjustments</h3>
-        <label>Select Language</label>
-        <div class="radio-group">
-            <label style="cursor:pointer;"><input type="radio" name="lang_pick" value="gu" checked onclick="changeLang('gu')"> ગુજરાતી</label>
-            <label style="cursor:pointer;"><input type="radio" name="lang_pick" value="en" onclick="changeLang('en')"> English</label>
-            <label style="cursor:pointer;"><input type="radio" name="lang_pick" value="hi" onclick="changeLang('hi')"> हिन्दी</label>
-        </div>
-
-        <label>Text Color</label>
-        <input type="color" id="clrPick" value="#ffffff" oninput="adjustDisplay()">
-
-        <div class="adjustment-box">
-            <div class="slider-container">
-                <div class="slider-label"><span>✨ Brightness</span> <span id="brightVal" class="val-text">100%</span></div>
-                <input type="range" id="brightness" min="10" max="150" value="100" step="10" oninput="adjustDisplay()">
+    <div id="main-ui">
+        <div class="box">
+            <h3>⏲️ Timer Control</h3>
+            <label>Speech Duration (HH : MM : SS)</label>
+            <div class="time-input-group">
+                <input type="number" id="hh" min="0" max="23" value="00">
+                <input type="number" id="mm" min="0" max="59" value="00">
+                <input type="number" id="ss" min="0" max="59" value="00">
             </div>
+            <button class="btn-start" onclick="control('start')">🚀 START SPEECH</button>
+            <div class="flex-row">
+                <button class="btn-stop" onclick="control('stop')">🛑 STOP</button>
+                <button class="btn-resume" onclick="control('resume')">▶️ RESUME</button>
+            </div>
+            <button class="btn-reset" onclick="control('reset')">🔄 RESET TIMER</button>
 
-            <div class="slider-container" style="margin-bottom:0;">
-                <div class="slider-label"><span>🌈 Color Saturation</span> <span id="satVal" class="val-text">100%</span></div>
-                <input type="range" id="saturation" min="0" max="200" value="100" step="10" oninput="adjustDisplay()">
+            <div class="adjustment-box">
+                <div class="slider-label"><span>🔊 Audio Volume</span> <span id="volPerc" class="val-text">50%</span></div>
+                <input type="range" id="volBar" min="0" max="100" value="50" step="10" oninput="adjustDisplay()">
+                <label style="margin-top:10px; cursor:pointer; display:flex; align-items:center; gap:8px;">
+                    <input type="checkbox" id="muteCheck" onclick="adjustDisplay()"> Mute Audio
+                </label>
             </div>
         </div>
+
+        <div class="box">
+            <h3>💬 Message Center</h3>
+            <textarea id="msgInput" rows="3" placeholder="સંદેશ લખો..."></textarea>
+            <div class="flex-row">
+                <button class="btn-msg" onclick="control('msg')">📤 SEND</button>
+                <button class="btn-clear" onclick="clearMsg()">🗑️ CLEAR</button>
+            </div>
+        </div>
+
+        <div class="box">
+            <h3>🛠️ Display Adjustments</h3>
+            <label>Select Language</label>
+            <div class="radio-group">
+                <label style="cursor:pointer;"><input type="radio" name="lang_pick" value="gu" checked onclick="changeLang('gu')"> ગુજરાતી</label>
+                <label style="cursor:pointer;"><input type="radio" name="lang_pick" value="en" onclick="changeLang('en')"> English</label>
+                <label style="cursor:pointer;"><input type="radio" name="lang_pick" value="hi" onclick="changeLang('hi')"> हिन्दी</label>
+            </div>
+
+            <label>Text Color</label>
+            <input type="color" id="clrPick" value="#ffffff" oninput="adjustDisplay()">
+
+            <div class="adjustment-box">
+                <div class="slider-container">
+                    <div class="slider-label"><span>✨ Brightness</span> <span id="brightVal" class="val-text">100%</span></div>
+                    <input type="range" id="brightness" min="10" max="150" value="100" step="10" oninput="adjustDisplay()">
+                </div>
+                <div class="slider-container" style="margin-bottom:0;">
+                    <div class="slider-label"><span>🌈 Color Saturation</span> <span id="satVal" class="val-text">100%</span></div>
+                    <input type="range" id="saturation" min="0" max="200" value="100" step="10" oninput="adjustDisplay()">
+                </div>
+            </div>
+        </div>
+        <button onclick="location.reload()" style="background:#475569; color:white; margin-top:10px; margin-bottom:40px;">🚪 Logout & Lock</button>
     </div>
 </div>
 
 <script>
     // --- ૧. Firebase Configuration ---
-    // તમારા Firebase Console માંથી મળેલી વિગતો અહીં બદલો
     const firebaseConfig = {
         apiKey: "AIzaSyD63SkDYB69WSUXnADxk-hGTBNz3bK543w",
         authDomain: "hariprabodham-podium-display.firebaseapp.com",
@@ -129,17 +150,30 @@
     const database = firebase.database();
     const podiumRef = database.ref('podium_final');
 
+    const CORRECT_PIN = "3690"; // તમારો સિક્રેટ PIN
     let pausedAt = 0;
-    let currentState = {}; // રિયલ ટાઈમ સ્ટેટ રાખવા માટે
+    let currentState = {};
 
-    // ડેટાબેઝમાંથી લેટેસ્ટ વેલ્યુ સાંભળવી
-    podiumRef.on('value', (snapshot) => {
-        currentState = snapshot.val() || {};
-    });
+    // PIN ચેક કરવાનું ફંક્શન
+    function checkPin() {
+        const input = document.getElementById('pinInput').value;
+        if (input === CORRECT_PIN) {
+            document.getElementById('pin-screen').style.display = 'none';
+            document.getElementById('main-ui').style.display = 'block';
+            
+            // અનલોક થયા પછી જ લિસનર ચાલુ કરવો
+            podiumRef.on('value', (snapshot) => {
+                currentState = snapshot.val() || {};
+            });
+        } else {
+            document.getElementById('errorMsg').style.display = 'block';
+            document.getElementById('pinInput').value = '';
+        }
+    }
 
     // ૨. ફંક્શન: ભાષા બદલવી
     function changeLang(langCode) {
-        const lp = { gu: "સંદેશ લખો...", en: "Type Message...", hi: "संदેશ लिखें..." };
+        const lp = { gu: "સંદેશ લખો...", en: "Type Message...", hi: "संदेश लिखें..." };
         document.getElementById('msgInput').placeholder = lp[langCode];
         adjustDisplay();
     }
@@ -193,11 +227,10 @@
         saveToFirebase(store);
     }
 
-    // ૬. ફંક્શન: Firebase માં ડેટા સેવ કરવો (saveAll ને બદલે)
+    // ૬. ફંક્શન: Firebase માં ડેટા સેવ કરવો
     function saveToFirebase(obj) {
         podiumRef.set(obj);
     }
 </script>
 </body>
-
 </html>
