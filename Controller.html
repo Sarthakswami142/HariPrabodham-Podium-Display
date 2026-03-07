@@ -158,15 +158,24 @@
         const cdVal = document.getElementById('live-countdown'), cdBox = document.getElementById('live-box');
         const remain = currentState.duration - elapsed;
 
+        // સુધારો: જો duration 0 હોય તો હંમેશા લીલા રંગમાં 00:00:00 રાખવું
+        if (currentState.duration <= 0) {
+            cdVal.innerText = "00:00:00";
+            cdVal.style.color = "#00ff00";
+            cdBox.classList.remove('bg-red-alert');
+            return;
+        }
+
         if (remain < 0) {
             if (!soundPlayed && currentState.action === 'start') { playBeep(); soundPlayed = true; }
             cdVal.innerText = "-" + format(Math.abs(remain));
             cdBox.classList.add('bg-red-alert'); cdVal.style.color = "white";
             if (Math.abs(remain) % 60 === 0 && !isBlinking && currentState.action === 'start') startBlink(cdBox, "bg");
         } else if (remain === 0) {
+            if (!soundPlayed && currentState.action === 'start') { playBeep(); soundPlayed = true; }
             cdVal.innerText = "00:00:00";
-            cdBox.classList.remove('bg-red-alert');
-            cdVal.style.color = "#00ff00";
+            cdBox.classList.add('bg-red-alert');
+            cdVal.style.color = "white";
         } else {
             cdVal.innerText = format(remain); cdBox.classList.remove('bg-red-alert');
             const p = Math.ceil((remain / currentState.duration) * 100);
@@ -223,7 +232,7 @@
         } else if (act === 'stop') {
             store.action = 'stop'; pausedAt = (new Date().getTime() + serverOffset) - (store.startTime || new Date().getTime());
         } else if (act === 'resume') {
-            if (store.action === 'stop') { store.action = 'start'; store.startTime = (new Date().getTime() + serverOffset) - pausedAt; }
+            if (store.action === 'stop') { store.action = 'start'; store.startTime = new Date().getTime() + serverOffset - pausedAt; }
         } else if (act === 'reset') {
             store.action = 'reset'; pausedAt = 0;
             document.getElementById('hh').value="00"; document.getElementById('mm').value="00"; document.getElementById('ss').value="00";
