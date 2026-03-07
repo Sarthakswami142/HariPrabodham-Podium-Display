@@ -47,7 +47,6 @@
 
     <script>
         // --- ૧. Firebase Configuration ---
-        // કંટ્રોલર ફાઈલમાં જે વિગતો નાખી હોય તે જ અહીં નાખવી
         const firebaseConfig = {
             apiKey: "AIzaSyD63SkDYB69WSUXnADxk-hGTBNz3bK543w",
             authDomain: "hariprabodham-podium-display.firebaseapp.com",
@@ -96,11 +95,19 @@
             document.getElementById('lbl-msg').innerText = lang.msg;
         }
 
-        // ૩. લાઈવ ઘડિયાળ
+        // ૩. લાઈવ ઘડિયાળ (સુધારેલું: Local Device Date & Time)
         setInterval(() => {
             const now = new Date();
-            document.getElementById('date').innerText = now.toISOString().split('T')[0];
+            
+            // Local Date in YYYY-MM-DD format
+            const yyyy = now.getFullYear();
+            const mm = String(now.getMonth() + 1).padStart(2, '0');
+            const dd = String(now.getDate()).padStart(2, '0');
+            document.getElementById('date').innerText = `${yyyy}-${mm}-${dd}`;
+            
+            // Local Time in HH:MM:SS format
             document.getElementById('time').innerText = now.toLocaleTimeString('en-GB');
+            
             if (timerActive) updateTimers();
         }, 1000);
 
@@ -225,8 +232,4 @@
 
     </script>
 </body>
-
 </html>
-
-
-
