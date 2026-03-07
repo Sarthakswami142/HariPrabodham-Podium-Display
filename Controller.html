@@ -9,7 +9,7 @@
     <style>
         :root {
             --bg-dark: #0f172a; --card-bg: #1e293b; --accent-blue: #38bdf8;
-            --accent-green: #22c55e; --accent-red: #ef4444; --accent-orange: #f59e0b;
+            --accent-green: #00ff00; --accent-red: #ff0000; --accent-orange: #f59e0b;
             --text-main: #f8fafc; --text-dim: #94a3b8;
         }
         body { 
@@ -20,9 +20,16 @@
         .box { 
             background: var(--card-bg); padding: 20px; border-radius: 16px; margin-bottom: 20px; 
             border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+            transition: background 0.2s;
         }
 
-        /* PIN Screen Styles */
+        /* Live Status UI */
+        .live-box { border: 2px solid var(--accent-blue); position: relative; overflow: hidden; }
+        .bg-red-alert { background-color: var(--accent-red) !important; }
+        .blink-hide { visibility: hidden; }
+        .bg-blink-black { background-color: #000 !important; }
+
+        /* PIN Screen */
         #pin-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 80vh; }
         #pin-screen input { 
             background: #0f172a; color: white; border: 2px solid var(--accent-blue); 
@@ -31,7 +38,6 @@
         #pin-screen button { background: var(--accent-blue); color: white; margin-top: 20px; padding: 12px 30px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
         
         #main-ui { display: none; width: 100%; }
-
         h3 { margin: 0 0 15px 0; font-size: 1.1rem; color: var(--accent-blue); text-transform: uppercase; }
         label { display: block; font-size: 0.85rem; color: var(--text-dim); margin-bottom: 8px; }
         .time-input-group { display: flex; gap: 10px; align-items: center; justify-content: center; margin-bottom: 15px; }
@@ -39,28 +45,13 @@
             background: #0f172a; color: white; border: 1px solid #334155; padding: 12px; border-radius: 8px; width: 100%; outline: none;
         }
         .time-input-group input { text-align: center; width: 70px; font-weight: bold; font-size: 1.2rem; }
-        button { 
-            width: 100%; padding: 14px; margin: 8px 0; border-radius: 10px; border: none; font-weight: bold; cursor: pointer; 
-            display: flex; align-items: center; justify-content: center; gap: 8px; transition: 0.2s;
-        }
-        .btn-start { background: var(--accent-green); color: white; }
+        button { width: 100%; padding: 14px; margin: 8px 0; border-radius: 10px; border: none; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .btn-start { background: var(--accent-green); color: #000; }
         .btn-stop { background: var(--accent-red); color: white; }
         .btn-resume { background: var(--accent-orange); color: white; }
         .btn-reset { background: #475569; color: white; }
-        .btn-msg { background: var(--accent-blue); color: white; }
-        .btn-clear { background: transparent; border: 1px solid var(--accent-red); color: var(--accent-red); }
         .flex-row { display: flex; gap: 12px; align-items: center; }
-        .adjustment-box { background: #0f172a; padding: 15px; border-radius: 12px; border: 1px solid #334155; margin-top: 10px; }
-        
-        /* Animation for Blinking */
-        @keyframes blinker { 50% { opacity: 0; } }
-        .blink { animation: blinker 1s linear infinite; color: var(--accent-red) !important; }
-
-        .val-text { color: var(--accent-blue); font-weight: bold; }
-        input[type="range"] { -webkit-appearance: none; width: 100%; height: 6px; background: #334155; border-radius: 5px; outline: none; }
-        input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; background: var(--accent-blue); border-radius: 50%; cursor: pointer; border: 2px solid white; }
         .radio-group { display: flex; gap: 15px; background: #0f172a; padding: 12px; border-radius: 8px; border: 1px solid #334155; margin-bottom: 20px; }
-        input[type="color"] { height: 40px; cursor: pointer; border: none; background: none; width: 100%; margin-bottom: 15px;}
     </style>
 </head>
 <body>
@@ -68,61 +59,54 @@
 <div class="container">
     <div id="pin-screen">
         <h3>🔒 Security Access</h3>
-        <p style="color: var(--text-dim); font-size: 0.9rem;">કંટ્રોલર વાપરવા માટે PIN નાખો</p>
         <input type="password" id="pinInput" placeholder="PIN" maxlength="4">
         <button onclick="checkPin()">Unlock Console</button>
-        <p id="errorMsg" style="color: var(--accent-red); margin-top: 15px; display: none;">ખોટો PIN!</p>
+        <p id="errorMsg" style="color: var(--accent-red); margin-top: 15px; display: none;">Wrong PIN!</p>
     </div>
 
     <div id="main-ui">
-        <div class="box" id="live-status-box" style="border: 2px solid var(--accent-green); transition: 0.3s;">
-            <h3 id="live-title" style="color: var(--text-main);">📡 LIVE MONITORING</h3>
+        <div id="live-container" class="box live-box">
+            <h3 style="color: var(--accent-orange); text-align: center;">📡 STAGE LIVE PREVIEW</h3>
             <div style="display: flex; justify-content: space-around; text-align: center;">
                 <div>
                     <label>વક્તવ્ય સમય</label>
-                    <div id="live-total" style="font-size: 1.6rem; font-weight: bold;">00:00:00</div>
+                    <div id="live-speech" style="font-size: 1.6rem; font-weight: bold;">00:00:00</div>
                 </div>
-                <div style="border-left: 1px solid #334155; height: 45px; margin-top: 10px;"></div>
+                <div style="border-left: 1px solid #334155; height: 50px;"></div>
                 <div>
-                    <label>બાકી સમય</label>
-                    <div id="live-remain" style="font-size: 1.6rem; font-weight: bold; color: var(--accent-green);">00:00:00</div>
+                    <label id="live-label-remain">બાકી સમય</label>
+                    <div id="live-countdown" style="font-size: 1.6rem; font-weight: bold; color: var(--accent-green);">00:00:00</div>
                 </div>
             </div>
         </div>
 
         <div class="box">
             <h3>⏲️ Timer Control</h3>
-            <label>Speech Duration (HH : MM : SS)</label>
             <div class="time-input-group">
-                <input type="number" id="hh" min="0" max="23" value="00">
-                <input type="number" id="mm" min="0" max="59" value="00">
-                <input type="number" id="ss" min="0" max="59" value="00">
+                <input type="number" id="hh" placeholder="HH" value="00">
+                <input type="number" id="mm" placeholder="MM" value="00">
+                <input type="number" id="ss" placeholder="SS" value="00">
             </div>
-            <button class="btn-start" onclick="control('start')">🚀 START SPEECH</button>
+            <button class="btn-start" onclick="control('start')">🚀 START</button>
             <div class="flex-row">
                 <button class="btn-stop" onclick="control('stop')">🛑 STOP</button>
                 <button class="btn-resume" onclick="control('resume')">▶️ RESUME</button>
             </div>
-            <button class="btn-reset" onclick="control('reset')">🔄 RESET TIMER</button>
-
-            <div class="adjustment-box">
-                <div class="slider-label"><span>🔊 Monitor Beep</span></div>
-                <label style="margin-top:10px; cursor:pointer; display:flex; align-items:center; gap:8px;">
-                    <input type="checkbox" id="beepEnable" checked> Enable Beep on Controller
-                </label>
-            </div>
+            <button class="btn-reset" onclick="control('reset')">🔄 RESET</button>
         </div>
 
         <div class="box">
-            <h3>💬 Message Center</h3>
+            <h3>💬 Message & Settings</h3>
             <textarea id="msgInput" rows="2" placeholder="સંદેશ લખો..."></textarea>
-            <div class="flex-row">
-                <button class="btn-msg" onclick="control('msg')">📤 SEND</button>
-                <button class="btn-clear" onclick="clearMsg()">🗑️ CLEAR</button>
+            <button style="background: var(--accent-blue); color:white;" onclick="control('msg')">📤 SEND MESSAGE</button>
+            
+            <div class="radio-group" style="margin-top:15px;">
+                <label><input type="radio" name="lang_pick" value="gu" checked onclick="changeLang('gu')"> GU</label>
+                <label><input type="radio" name="lang_pick" value="en" onclick="changeLang('en')"> EN</label>
+                <label><input type="radio" name="lang_pick" value="hi" onclick="changeLang('hi')"> HI</label>
             </div>
         </div>
-
-        <button onclick="location.reload()" style="background:#475569; color:white; margin-bottom:40px;">🚪 Logout & Lock</button>
+        <button onclick="location.reload()" style="background:#475569; color:white;">🚪 Logout</button>
     </div>
 </div>
 
@@ -141,98 +125,113 @@
     const database = firebase.database();
     const podiumRef = database.ref('podium_final');
 
-    const CORRECT_PIN = "3690"; 
-    let currentState = {};
-    let lastBeepSecond = -1;
+    const CORRECT_PIN = "3690";
+    let currentState = {}, serverOffset = 0, soundPlayed = false, lastBlinkPercent = null;
+
+    // ૧. સર્વર ટાઈમ સાથે સિંક્રોનાઈઝેશન
+    database.ref(".info/serverTimeOffset").on("value", (snap) => {
+        serverOffset = snap.val();
+    });
 
     function checkPin() {
         if (document.getElementById('pinInput').value === CORRECT_PIN) {
             document.getElementById('pin-screen').style.display = 'none';
             document.getElementById('main-ui').style.display = 'block';
-            podiumRef.on('value', (snapshot) => { currentState = snapshot.val() || {}; });
-            setInterval(syncPreview, 200); // 200ms refresh for zero delay
+            podiumRef.on('value', (snapshot) => { 
+                currentState = snapshot.val() || {}; 
+                if(currentState.action === 'reset') soundPlayed = false;
+            });
+            setInterval(syncLivePreview, 1000);
         } else {
             document.getElementById('errorMsg').style.display = 'block';
         }
     }
 
-    function syncPreview() {
-        if (!currentState || currentState.action === 'reset' || !currentState.startTime) {
-            resetDisplay(); return;
+    // ૨. ડિસ્પ્લે જેવું જ લાઈવ લોજિક
+    function syncLivePreview() {
+        if (!currentState.startTime || currentState.action === 'reset') {
+            resetUI(); return;
         }
 
-        const now = Date.now();
-        let elapsed = 0;
+        const now = new Date().getTime() + serverOffset;
+        const elapsed = Math.floor((now - currentState.startTime) / 1000);
+        const remain = currentState.duration - elapsed;
 
-        if (currentState.action === 'start') {
-            elapsed = Math.floor((now - currentState.startTime) / 1000);
-        } else if (currentState.action === 'stop') {
-            elapsed = Math.floor(pausedAt / 1000);
-        }
+        document.getElementById('live-speech').innerText = format(elapsed);
+        const cdVal = document.getElementById('live-countdown');
+        const cdBox = document.getElementById('live-container');
 
-        const remaining = Math.max(0, currentState.duration - elapsed);
-        
-        document.getElementById('live-total').innerText = formatTime(elapsed);
-        document.getElementById('live-remain').innerText = formatTime(remaining);
-
-        updateVisuals(remaining);
-    }
-
-    function updateVisuals(rem) {
-        const box = document.getElementById('live-status-box');
-        const txt = document.getElementById('live-remain');
-
-        if (rem > 60) {
-            box.style.borderColor = "var(--accent-green)";
-            txt.className = ""; txt.style.color = "var(--accent-green)";
-        } else if (rem <= 60 && rem > 0) {
-            box.style.borderColor = "var(--accent-orange)";
-            txt.style.color = "var(--accent-orange)";
-            if (rem <= 10) triggerBeep(rem);
-        } else if (rem === 0) {
-            box.style.borderColor = "var(--accent-red)";
-            txt.className = "blink";
-            triggerBeep(0);
+        if (remain <= 0) {
+            if (!soundPlayed && remain === 0) { playBeep(); soundPlayed = true; }
+            cdVal.innerText = "-" + format(Math.abs(remain));
+            cdBox.classList.add('bg-red-alert');
+            cdVal.style.color = "white";
+            if (Math.abs(remain) % 60 === 0) startBlink(cdBox, "bg");
+        } else {
+            cdVal.innerText = format(remain);
+            cdBox.classList.remove('bg-red-alert');
+            const p = Math.ceil((remain / currentState.duration) * 100);
+            updateColors(p, cdVal);
         }
     }
 
-    function triggerBeep(s) {
-        if (s !== lastBeepSecond && document.getElementById('beepEnable').checked) {
-            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            const osc = audioCtx.createOscillator();
-            osc.type = 'sine';
-            osc.frequency.setValueAtTime(s === 0 ? 880 : 440, audioCtx.currentTime);
-            osc.connect(audioCtx.destination);
-            osc.start(); osc.stop(audioCtx.currentTime + 0.1);
-            lastBeepSecond = s;
-        }
+    function updateColors(p, el) {
+        if (p <= 5) { el.style.color = "#ff3333"; if(lastBlinkPercent !== 5) {lastBlinkPercent=5; startBlink(el, "text");}}
+        else if (p <= 25) { el.style.color = "#ffaa00"; if(lastBlinkPercent !== 25) {lastBlinkPercent=25; startBlink(el, "text");}}
+        else if (p <= 50) { el.style.color = "#ffff00"; if(lastBlinkPercent !== 50) {lastBlinkPercent=50; startBlink(el, "text");}}
+        else { el.style.color = "#00ff00"; }
     }
 
-    function formatTime(s) {
-        return new Date(s * 1000).toISOString().substr(11, 8);
+    function startBlink(el, type) {
+        let c = 0;
+        let t = setInterval(() => {
+            type === "text" ? el.classList.toggle('blink-hide') : el.classList.toggle('bg-blink-black');
+            if (++c >= 6) { clearInterval(t); el.classList.remove('blink-hide', 'bg-blink-black'); }
+        }, 300);
     }
 
-    function resetDisplay() {
-        document.getElementById('live-total').innerText = "00:00:00";
-        document.getElementById('live-remain').innerText = "00:00:00";
-        document.getElementById('live-status-box').style.borderColor = "var(--accent-blue)";
-        document.getElementById('live-remain').className = "";
+    function playBeep() {
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain); gain.connect(audioCtx.destination);
+        osc.start(); osc.stop(audioCtx.currentTime + 1);
     }
 
-    // ઓરિજિનલ કંટ્રોલ ફંક્શન્સ (control, clearMsg, adjustDisplay) અહીં ચાલુ રહેશે...
+    function resetUI() {
+        document.getElementById('live-speech').innerText = "00:00:00";
+        document.getElementById('live-countdown').innerText = "00:00:00";
+        document.getElementById('live-countdown').style.color = "var(--accent-green)";
+        document.getElementById('live-container').classList.remove('bg-red-alert');
+    }
+
+    function format(s) {
+        const h = String(Math.floor(s / 3600)).padStart(2, '0');
+        const m = String(Math.floor((s % 3600) / 60)).padStart(2, '0');
+        const sc = String(s % 60).padStart(2, '0');
+        return `${h}:${m}:${sc}`;
+    }
+
     function control(act) {
         const hh = parseInt(document.getElementById('hh').value) || 0;
         const mm = parseInt(document.getElementById('mm').value) || 0;
         const ss = parseInt(document.getElementById('ss').value) || 0;
-        const totalSecs = (hh * 3600) + (mm * 60) + ss;
+        const total = (hh * 3600) + (mm * 60) + ss;
         let store = {...currentState};
-        if (act === 'start') { store.action = 'start'; store.startTime = Date.now(); store.duration = totalSecs; pausedAt = 0; }
-        else if (act === 'stop') { store.action = 'stop'; pausedAt = Date.now() - (store.startTime || Date.now()); }
-        else if (act === 'resume') { if (store.action === 'stop') { store.action = 'start'; store.startTime = Date.now() - pausedAt; } }
-        else if (act === 'reset') { store.action = 'reset'; pausedAt = 0; }
-        if (act === 'msg') store.msg = document.getElementById('msgInput').value || "CLEAR_MSG";
+
+        if (act === 'start') {
+            store.action = 'start'; store.startTime = new Date().getTime() + serverOffset; store.duration = total;
+        } else if (act === 'stop') {
+            store.action = 'stop'; // Stop logic
+        } else if (act === 'reset') {
+            store.action = 'reset';
+        } else if (act === 'msg') {
+            store.msg = document.getElementById('msgInput').value;
+        }
         podiumRef.set(store);
     }
+
+    function changeLang(l) { podiumRef.update({lang: l}); }
 </script>
 </body>
 </html>
