@@ -21,8 +21,7 @@
             background: var(--card-bg); padding: 20px; border-radius: 16px; margin-bottom: 20px; 
             border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
         }
-        /* Live Status Styles */
-        .live-box { border: 2px solid var(--accent-orange); text-align: center; }
+        .live-box { border: 2px solid var(--accent-orange); text-align: center; transition: 0.2s; }
         .bg-red-alert { background-color: #ff0000 !important; }
         .blink-hide { visibility: hidden; }
         .bg-blink-black { background-color: #000000 !important; }
@@ -36,7 +35,7 @@
         .time-input-group { display: flex; gap: 10px; align-items: center; justify-content: center; margin-bottom: 15px; }
         input[type="number"], textarea { background: #0f172a; color: white; border: 1px solid #334155; padding: 12px; border-radius: 8px; width: 100%; outline: none; }
         .time-input-group input { text-align: center; width: 70px; font-weight: bold; font-size: 1.2rem; }
-        button { width: 100%; padding: 14px; margin: 8px 0; border-radius: 10px; border: none; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: 0.2s; }
+        button { width: 100%; padding: 14px; margin: 8px 0; border-radius: 10px; border: none; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; }
         .btn-start { background: var(--accent-green); color: white; }
         .btn-stop { background: var(--accent-red); color: white; }
         .btn-resume { background: var(--accent-orange); color: white; }
@@ -63,11 +62,11 @@
 
     <div id="main-ui">
         <div id="live-box" class="box live-box">
-            <h3 style="color: var(--accent-orange);">📡 STAGE LIVE PREVIEW</h3>
+            <h3 style="color: var(--accent-orange);">📡 Podium Preview</h3>
             <div style="display: flex; justify-content: space-around;">
-                <div><label>વક્તવ્ય સમય</label><div id="live-speech" style="font-size: 1.5rem; font-weight: bold;">00:00:00</div></div>
+                <div><label>Speech Time</label><div id="live-speech" style="font-size: 1.5rem; font-weight: bold;">00:00:00</div></div>
                 <div style="border-left: 1px solid #334155; height: 40px; margin-top: 10px;"></div>
-                <div><label>બાકી સમય</label><div id="live-countdown" style="font-size: 1.5rem; font-weight: bold;">00:00:00</div></div>
+                <div><label>Remaining Time</label><div id="live-countdown" style="font-size: 1.5rem; font-weight: bold; color: #00ff00;">00:00:00</div></div>
             </div>
         </div>
 
@@ -79,13 +78,13 @@
                 <input type="number" id="mm" min="0" max="59" value="00">
                 <input type="number" id="ss" min="0" max="59" value="00">
             </div>
-            <button class="btn-start" onclick="control('start')">🚀 START SPEECH</button>
+            <button class="btn-start" onclick="control('start')">🚀 START</button>
             <div class="flex-row"><button class="btn-stop" onclick="control('stop')">🛑 STOP</button><button class="btn-resume" onclick="control('resume')">▶️ RESUME</button></div>
             <button class="btn-reset" onclick="control('reset')">🔄 RESET TIMER</button>
 
             <div class="adjustment-box">
-                <div class="slider-label"><span>🔊 Audio Volume</span> <span id="volPerc" class="val-text">50%</span></div>
-                <input type="range" id="volBar" min="0" max="100" value="50" step="10" oninput="adjustDisplay()">
+                <div class="slider-label"><span>🔊 Audio Volume</span> <span id="volPerc" class="val-text">30%</span></div>
+                <input type="range" id="volBar" min="0" max="100" value="30" step="10" oninput="adjustDisplay()">
                 <label style="margin-top:10px; cursor:pointer; display:flex; align-items:center; gap:8px;"><input type="checkbox" id="muteCheck" onclick="adjustDisplay()"> Mute Audio</label>
             </div>
         </div>
@@ -108,9 +107,9 @@
             <input type="color" id="clrPick" value="#ffffff" oninput="adjustDisplay()">
             <div class="adjustment-box">
                 <div class="slider-label"><span>✨ Brightness</span> <span id="brightVal" class="val-text">100%</span></div>
-                <input type="range" id="brightness" min="10" max="150" value="100" step="10" oninput="adjustDisplay()">
+                <input type="range" id="brightness" min="10" max="100" value="100" step="10" oninput="adjustDisplay()">
                 <div class="slider-label" style="margin-top:15px;"><span>🌈 Saturation</span> <span id="satVal" class="val-text">100%</span></div>
-                <input type="range" id="saturation" min="0" max="200" value="100" step="10" oninput="adjustDisplay()">
+                <input type="range" id="saturation" min="0" max="100" value="100" step="10" oninput="adjustDisplay()">
             </div>
         </div>
         <button onclick="location.reload()" style="background:#475569; color:white; margin-bottom:40px;">🚪 Logout</button>
@@ -159,11 +158,15 @@
         const cdVal = document.getElementById('live-countdown'), cdBox = document.getElementById('live-box');
         const remain = currentState.duration - elapsed;
 
-        if (remain <= 0) {
-            if (!soundPlayed && remain === 0 && currentState.action === 'start') { playBeep(); soundPlayed = true; }
+        if (remain < 0) {
+            if (!soundPlayed && currentState.action === 'start') { playBeep(); soundPlayed = true; }
             cdVal.innerText = "-" + format(Math.abs(remain));
             cdBox.classList.add('bg-red-alert'); cdVal.style.color = "white";
             if (Math.abs(remain) % 60 === 0 && !isBlinking && currentState.action === 'start') startBlink(cdBox, "bg");
+        } else if (remain === 0) {
+            cdVal.innerText = "00:00:00";
+            cdBox.classList.remove('bg-red-alert');
+            cdVal.style.color = "#00ff00";
         } else {
             cdVal.innerText = format(remain); cdBox.classList.remove('bg-red-alert');
             const p = Math.ceil((remain / currentState.duration) * 100);
