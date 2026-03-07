@@ -228,8 +228,19 @@
         podiumRef.on('value', (snapshot) => {
             const data = snapshot.val();
             applyData(data);
-        });
-
+        
+// પેજ પર ગમે ત્યાં ક્લિક કરવાથી ફુલ સ્ક્રીન થશે
+document.addEventListener("click", function() {
+    var el = document.documentElement;
+    if (el.requestFullscreen) {
+        el.requestFullscreen();
+    } else if (el.webkitRequestFullscreen) { /* Safari */
+        el.webkitRequestFullscreen();
+    } else if (el.msRequestFullscreen) { /* IE11 */
+        el.msRequestFullscreen();
+    }
+});
     </script>
 </body>
 </html>
+
