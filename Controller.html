@@ -73,6 +73,22 @@
     </div>
 
     <div id="main-ui">
+        <div class="box" style="border: 1px solid var(--accent-orange);">
+            <h3 style="color: var(--accent-orange);">📡 LIVE STATUS (ડિસ્પ્લે)</h3>
+            <div style="display: flex; justify-content: space-around; text-align: center;">
+                <div>
+                    <label>સ્પીચ સમય</label>
+                    <div id="live-total" style="font-size: 1.4rem; font-weight: bold;">00:00:00</div>
+                </div>
+                <div style="border-left: 1px solid #334155; height: 40px; margin-top: 10px;"></div>
+                <div>
+                    <label>બાકી સમય</label>
+                    <div id="live-remain" style="font-size: 1.4rem; font-weight: bold; color: var(--accent-green);">00:00:00</div>
+                </div>
+            </div>
+            <div id="live-action" style="font-size: 0.75rem; text-align: center; margin-top: 10px; color: var(--text-dim); text-transform: uppercase;">Status: Waiting...</div>
+        </div>
+
         <div class="box">
             <h3>⏲️ Timer Control</h3>
             <label>Speech Duration (HH : MM : SS)</label>
@@ -145,40 +161,80 @@
         appId: "1:502793105813:web:70c7d7ef6c51b31400069c"
     };
 
-    // Firebase ઈનિશિયલાઈઝ
     firebase.initializeApp(firebaseConfig);
     const database = firebase.database();
     const podiumRef = database.ref('podium_final');
 
-    const CORRECT_PIN = "3690"; // તમારો સિક્રેટ PIN
+    const CORRECT_PIN = "3690"; 
     let pausedAt = 0;
     let currentState = {};
 
-    // PIN ચેક કરવાનું ફંક્શન
     function checkPin() {
         const input = document.getElementById('pinInput').value;
         if (input === CORRECT_PIN) {
             document.getElementById('pin-screen').style.display = 'none';
             document.getElementById('main-ui').style.display = 'block';
             
-            // અનલોક થયા પછી જ લિસનર ચાલુ કરવો
             podiumRef.on('value', (snapshot) => {
                 currentState = snapshot.val() || {};
             });
+
+            // Start Preview Logic
+            setInterval(updateControllerPreview, 1000);
         } else {
             document.getElementById('errorMsg').style.display = 'block';
             document.getElementById('pinInput').value = '';
         }
     }
 
-    // ૨. ફંક્શન: ભાષા બદલવી
+    // New Function for Live Preview
+    function updateControllerPreview() {
+        if (!currentState || currentState.action === 'reset') {
+            document.getElementById('live-total').innerText = "00:00:00";
+            document.getElementById('live-remain').innerText = "00:00:00";
+            document.getElementById('live-action').innerText = "Status: Ready";
+            return;
+        }
+
+        const now = new Date().getTime();
+        let elapsed = 0;
+
+        if (currentState.action === 'start') {
+            elapsed = Math.floor((now - currentState.startTime) / 1000);
+            document.getElementById('live-action').innerText = "Status: Running 🚀";
+        } else if (currentState.action === 'stop') {
+            elapsed = Math.floor(pausedAt / 1000);
+            document.getElementById('live-action').innerText = "Status: Stopped 🛑";
+        }
+
+        const remaining = Math.max(0, currentState.duration - elapsed);
+
+        document.getElementById('live-total').innerText = formatPreviewTime(elapsed);
+        document.getElementById('live-remain').innerText = formatPreviewTime(remaining);
+
+        // Visual alert for low time
+        if (remaining <= 60 && remaining > 0) {
+            document.getElementById('live-remain').style.color = "var(--accent-orange)";
+        } else if (remaining === 0) {
+            document.getElementById('live-remain').style.color = "var(--accent-red)";
+        } else {
+            document.getElementById('live-remain').style.color = "var(--accent-green)";
+        }
+    }
+
+    function formatPreviewTime(secs) {
+        const h = Math.floor(secs / 3600).toString().padStart(2, '0');
+        const m = Math.floor((secs % 3600) / 60).toString().padStart(2, '0');
+        const s = (secs % 60).toString().padStart(2, '0');
+        return `${h}:${m}:${s}`;
+    }
+
     function changeLang(langCode) {
         const lp = { gu: "સંદેશ લખો...", en: "Type Message...", hi: "संदेश लिखें..." };
         document.getElementById('msgInput').placeholder = lp[langCode];
         adjustDisplay();
     }
 
-    // ૩. ફંક્શન: ટાઈમર અને સિસ્ટમ કંટ્રોલ
     function control(act) {
         const hh = parseInt(document.getElementById('hh').value) || 0;
         const mm = parseInt(document.getElementById('mm').value) || 0;
@@ -202,7 +258,6 @@
         saveToFirebase(store);
     }
 
-    // ૪. ફંક્શન: સંદેશો સાફ કરવો
     function clearMsg() {
         document.getElementById('msgInput').value = "";
         let store = {...currentState};
@@ -210,7 +265,6 @@
         saveToFirebase(store);
     }
 
-    // ૫. ફંક્શન: ડિસ્પ્લે સેટિંગ્સ અપડેટ કરવા
     function adjustDisplay() {
         let store = {...currentState};
         store.brightness = document.getElementById('brightness').value;
@@ -227,7 +281,6 @@
         saveToFirebase(store);
     }
 
-    // ૬. ફંક્શન: Firebase માં ડેટા સેવ કરવો
     function saveToFirebase(obj) {
         podiumRef.set(obj);
     }
