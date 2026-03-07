@@ -46,7 +46,6 @@
     </div>
 
     <script>
-        // --- ૧. Firebase Configuration ---
         const firebaseConfig = {
             apiKey: "AIzaSyD63SkDYB69WSUXnADxk-hGTBNz3bK543w",
             authDomain: "hariprabodham-podium-display.firebaseapp.com",
@@ -61,7 +60,6 @@
         const database = firebase.database();
         const podiumRef = database.ref('podium_final');
 
-        // --- ગ્લોબલ વેરિએબલ્સ ---
         let timerActive = false, startTime = null, duration = 0, scrollInterval;
         let lastBlinkPercent = null, isBlinking = false, soundPlayed = false;
         let volume = 0.5, isMuted = false;
@@ -72,7 +70,6 @@
             en: { date: "CURRENT DATE:", time: "CURRENT TIME:", speech: "SPEECH TIME:", remaining: "REMAINING TIME:", msg: "MESSAGE:" }
         };
 
-        // ૧. ફંક્શન: ઓડિયો બીપ
         function playBeep() {
             if (isMuted || volume <= 0) return;
             const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -85,7 +82,6 @@
             osc.start(); osc.stop(audioCtx.currentTime + 1);
         }
 
-        // ૨. ફંક્શન: ભાષા અપડેટ
         function updateLanguage(langCode) {
             const lang = allLabels[langCode] || allLabels['gu'];
             document.getElementById('lbl-date').innerText = lang.date;
@@ -95,23 +91,19 @@
             document.getElementById('lbl-msg').innerText = lang.msg;
         }
 
-        // ૩. લાઈવ ઘડિયાળ (સુધારેલું: Local Device Date & Time)
+        // ૩. લાઈવ ઘડિયાળ (Fixed: Local Device Date & Time)
         setInterval(() => {
             const now = new Date();
-            
-            // Local Date in YYYY-MM-DD format
             const yyyy = now.getFullYear();
             const mm = String(now.getMonth() + 1).padStart(2, '0');
             const dd = String(now.getDate()).padStart(2, '0');
-            document.getElementById('date').innerText = `${yyyy}-${mm}-${dd}`;
             
-            // Local Time in HH:MM:SS format
+            document.getElementById('date').innerText = yyyy + "-" + mm + "-" + dd;
             document.getElementById('time').innerText = now.toLocaleTimeString('en-GB');
             
             if (timerActive) updateTimers();
         }, 1000);
 
-        // ૪. ફંક્શન: ટાઈમર ગણતરી
         function updateTimers() {
             const now = new Date().getTime();
             const elapsed = Math.floor((now - startTime) / 1000);
@@ -149,7 +141,6 @@
             }
         }
 
-        // ૫. ફંક્શન: બ્લિંકિંગ એલર્ટ
         function startBlink(element, type) {
             isBlinking = true; let count = 0;
             let bt = setInterval(() => {
@@ -158,7 +149,6 @@
             }, 300);
         }
 
-        // ૬. ફંક્શન: મેસેજ ઓટો-સ્ક્રોલિંગ
         function startScrolling() {
             const container = document.getElementById('msg-container');
             const content = document.getElementById('message');
@@ -187,7 +177,6 @@
             }
         }
 
-        // ૭. ફંક્શન: સમય ફોર્મેટિંગ
         function format(s) {
             const h = String(Math.floor(s / 3600)).padStart(2, '0');
             const m = String(Math.floor((s % 3600) / 60)).padStart(2, '0');
@@ -195,7 +184,6 @@
             return `${h}:${m}:${sc}`;
         }
 
-        // ૮. ફંક્શન: Firebase માંથી ડેટા એપ્લાય કરવો
         function applyData(data) {
             if (!data) return;
             document.body.style.filter = `brightness(${data.brightness || 100}%) saturate(${data.saturation || 100}%)`;
@@ -224,23 +212,10 @@
             if (data.clr) document.documentElement.style.setProperty('--main-txt', data.clr);
         }
 
-        // ૯. Firebase Real-time Listener (Storage Event ની બદલે)
         podiumRef.on('value', (snapshot) => {
             const data = snapshot.val();
             applyData(data);
-        
-// પેજ પર ગમે ત્યાં ક્લિક કરવાથી ફુલ સ્ક્રીન થશે
-document.addEventListener("click", function() {
-    var el = document.documentElement;
-    if (el.requestFullscreen) {
-        el.requestFullscreen();
-    } else if (el.webkitRequestFullscreen) { /* Safari */
-        el.webkitRequestFullscreen();
-    } else if (el.msRequestFullscreen) { /* IE11 */
-        el.msRequestFullscreen();
-    }
-});
+        });
     </script>
 </body>
 </html>
-
