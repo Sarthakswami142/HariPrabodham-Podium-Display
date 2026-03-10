@@ -64,6 +64,34 @@
         let lastBlinkPercent = null, isBlinking = false, soundPlayed = false;
         let volume = 0.5, isMuted = false;
 
+
+        // --- સ્ક્રીન ઓફ થતી અટકાવવા માટેનો કોડ (Wake Lock) ---
+let wakeLock = null;
+
+const requestWakeLock = async () => {
+    try {
+        // આ લાઈન બ્રાઉઝરને સ્ક્રીન ચાલુ રાખવા માટે વિનંતી કરશે
+        wakeLock = await navigator.wakeLock.request('screen');
+        console.log('Wake Lock is active! Screen will not turn off.');
+
+        // જો યુઝર ટેબ બદલે અને પાછો આવે, તો ફરીથી લોક મેળવવો પડે
+        wakeLock.addEventListener('release', () => {
+            console.log('Wake Lock was released.');
+        });
+    } catch (err) {
+        console.error(`${err.name}, ${err.message}`);
+    }
+};
+
+// પેજ લોડ થાય ત્યારે અને જ્યારે પેજ ફરીથી વિઝિબલ થાય ત્યારે લોક રિક્વેસ્ટ કરવી
+requestWakeLock();
+
+document.addEventListener('visibilitychange', async () => {
+    if (wakeLock !== null && document.visibilityState === 'visible') {
+        await requestWakeLock();
+    }
+});
+        
         const allLabels = {
             gu: { date: "વર્તમાન તારીખ:", time: "વર્તમાન સમય:", speech: "વક્તવ્યનો સમય:", remaining: "બાકી સમય:", msg: "સંદેશ:" },
             hi: { date: "वर्तमान तिथि:", time: "वर्तमान समय:", speech: "भाषण का समय:", remaining: "शेष समय:", msg: "संदेश:" },
@@ -234,3 +262,4 @@
     </script>
 </body>
 </html>
+
