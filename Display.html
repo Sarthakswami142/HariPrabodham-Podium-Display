@@ -91,7 +91,6 @@
             document.getElementById('lbl-msg').innerText = lang.msg;
         }
 
-        // ૩. લાઈવ ઘડિયાળ (Fixed: Local Device Date & Time)
         setInterval(() => {
             const now = new Date();
             const yyyy = now.getFullYear();
@@ -128,13 +127,13 @@
 
                 if (p <= 5) {
                     cdVal.style.color = "#ff3333";
-                    if (lastBlinkPercent !== 5) { lastBlinkPercent = 5; startBlink(cdVal, "text"); }
+                    if (lastBlinkPercent !== 5) { lastBlinkPercent = 5; startBlink(cdCell, "cell-red"); }
                 } else if (p <= 25) {
                     cdVal.style.color = "#ffaa00";
-                    if (lastBlinkPercent !== 25) { lastBlinkPercent = 25; startBlink(cdVal, "text"); }
+                    if (lastBlinkPercent !== 25) { lastBlinkPercent = 25; startBlink(cdCell, "cell-orange"); }
                 } else if (p <= 50) {
                     cdVal.style.color = "#ffff00";
-                    if (lastBlinkPercent !== 50) { lastBlinkPercent = 50; startBlink(cdVal, "text"); }
+                    if (lastBlinkPercent !== 50) { lastBlinkPercent = 50; startBlink(cdCell, "cell-yellow"); }
                 } else {
                     cdVal.style.color = "#00ff00";
                 }
@@ -144,8 +143,24 @@
         function startBlink(element, type) {
             isBlinking = true; let count = 0;
             let bt = setInterval(() => {
-                type === "text" ? element.classList.toggle('blink-hide') : element.classList.toggle('bg-blink-black');
-                if (++count >= 6) { clearInterval(bt); element.classList.remove('blink-hide', 'bg-blink-black'); isBlinking = false; }
+                if (type === "text") {
+                    element.classList.toggle('blink-hide');
+                } else if (type === "background") {
+                    element.classList.toggle('bg-blink-black');
+                } else if (type === "cell-red") {
+                    element.style.backgroundColor = (element.style.backgroundColor === "rgb(255, 0, 0)") ? "transparent" : "#ff0000";
+                } else if (type === "cell-orange") {
+                    element.style.backgroundColor = (element.style.backgroundColor === "rgb(255, 170, 0)") ? "transparent" : "#ffaa00";
+                } else if (type === "cell-yellow") {
+                    element.style.backgroundColor = (element.style.backgroundColor === "rgb(255, 255, 0)") ? "transparent" : "#ffff00";
+                }
+                
+                if (++count >= 6) { 
+                    clearInterval(bt); 
+                    element.style.backgroundColor = "transparent";
+                    element.classList.remove('blink-hide', 'bg-blink-black'); 
+                    isBlinking = false; 
+                }
             }, 300);
         }
 
